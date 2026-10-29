@@ -127,3 +127,7 @@ class OrderDetailResponse(BaseModel):
 
 class CreateOrderRequest(BaseModel):
     basket_id: int
+
+
+class FavouriteResponse(CatalogItemResponse):
+    created_at: datetime

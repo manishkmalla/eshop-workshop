@@ -57,3 +57,10 @@ CREATE TABLE IF NOT EXISTS order_items (
     unit_price REAL NOT NULL,
     units INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS favourites (
+    user_email TEXT NOT NULL,
+    catalog_item_id INTEGER NOT NULL REFERENCES catalog_items(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (user_email, catalog_item_id)
+);

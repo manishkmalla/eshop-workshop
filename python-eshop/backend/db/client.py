@@ -9,6 +9,7 @@ from models.entities import (
     CatalogBrand,
     CatalogItem,
     CatalogType,
+    Favourite,
     Order,
     OrderItem,
     User,
@@ -108,6 +109,35 @@ class DatabaseClient:
         with self._connection() as conn:
             rows = conn.execute(query, item_ids).fetchall()
             return [_row_to_catalog_item(row) for row in rows]
+
+    def add_favourite(self, email: str, item_id: int) -> None:
+        created_at = datetime.now(timezone.utc).isoformat()
+        with self._connection() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO favourites (user_email, catalog_item_id, created_at)"
+                " VALUES (?, ?, ?)",
+                (email, item_id, created_at),
+            )
+
+    def list_favourites(self, email: str) -> list[Favourite]:
+        query = """
+            SELECT ci.*, cb.brand AS brand_name, ct.type AS type_name, f.created_at
+            FROM favourites f
+            JOIN catalog_items ci ON ci.id = f.catalog_item_id
+            JOIN catalog_brands cb ON cb.id = ci.catalog_brand_id
+            JOIN catalog_types ct ON ct.id = ci.catalog_type_id
+            WHERE f.user_email = ?
+            ORDER BY f.created_at DESC, ci.id DESC
+        """
+        with self._connection() as conn:
+            rows = conn.execute(query, (email,)).fetchall()
+            return [
+                Favourite(
+                    item=_row_to_catalog_item(row),
+                    created_at=_parse_utc(row["created_at"]),
+                )
+                for row in rows
+            ]
 
     def list_catalog_brands(self) -> list[CatalogBrand]:
         with self._connection() as conn:

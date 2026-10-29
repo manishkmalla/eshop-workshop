@@ -28,6 +28,12 @@ class CatalogItem:
 
 
 @dataclass
+class Favourite:
+    item: CatalogItem
+    created_at: datetime
+
+
+@dataclass
 class User:
     id: int
     email: str
