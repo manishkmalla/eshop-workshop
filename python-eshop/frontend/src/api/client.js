@@ -103,6 +103,7 @@ export const api = {
       body: JSON.stringify({ quantities }),
     }),
 
+  getFavourites: () => request('/api/favourites'),
   getFavouriteIds: () => request('/api/favourites/ids'),
   addFavourite: (productId) =>
     request(`/api/favourites/${productId}`, { method: 'POST' }),
