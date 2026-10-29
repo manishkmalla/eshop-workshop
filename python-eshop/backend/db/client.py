@@ -119,6 +119,22 @@ class DatabaseClient:
                 (email, item_id, created_at),
             )
 
+    def remove_favourite(self, email: str, item_id: int) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                "DELETE FROM favourites WHERE user_email = ? AND catalog_item_id = ?",
+                (email, item_id),
+            )
+
+    def list_favourite_ids(self, email: str) -> list[int]:
+        with self._connection() as conn:
+            rows = conn.execute(
+                "SELECT catalog_item_id FROM favourites WHERE user_email = ?"
+                " ORDER BY created_at DESC, catalog_item_id DESC",
+                (email,),
+            ).fetchall()
+            return [row["catalog_item_id"] for row in rows]
+
     def list_favourites(self, email: str) -> list[Favourite]:
         query = """
             SELECT ci.*, cb.brand AS brand_name, ct.type AS type_name, f.created_at

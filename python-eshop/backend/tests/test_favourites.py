@@ -83,3 +83,48 @@ def test_favourites_and_basket_do_not_affect_each_other(client, demo_headers):
     client.post("/api/basket/items", json={"catalog_item_id": 1}, headers=demo_headers)
 
     assert [f["id"] for f in client.get("/api/favourites", headers=demo_headers).json()] == [3]
+
+
+def test_removed_favourite_no_longer_appears_in_the_list(client, demo_headers):
+    client.post("/api/favourites/3", headers=demo_headers)
+    client.post("/api/favourites/1", headers=demo_headers)
+
+    removed = client.delete("/api/favourites/3", headers=demo_headers)
+
+    assert removed.status_code == 200, removed.text
+    assert [f["id"] for f in client.get("/api/favourites", headers=demo_headers).json()] == [1]
+
+
+def test_removing_a_product_that_is_not_a_favourite_is_a_no_op(client, demo_headers):
+    client.post("/api/favourites/3", headers=demo_headers)
+
+    never_saved = client.delete("/api/favourites/1", headers=demo_headers)
+    unknown = client.delete("/api/favourites/99999", headers=demo_headers)
+
+    assert never_saved.status_code == unknown.status_code == 200
+    assert [f["id"] for f in client.get("/api/favourites", headers=demo_headers).json()] == [3]
+
+
+def test_favourite_ids_match_the_full_list(client, demo_headers):
+    for product_id in (3, 1, 2):
+        client.post(f"/api/favourites/{product_id}", headers=demo_headers)
+
+    ids = client.get("/api/favourites/ids", headers=demo_headers)
+
+    assert ids.status_code == 200, ids.text
+    listed = client.get("/api/favourites", headers=demo_headers).json()
+    assert ids.json() == [f["id"] for f in listed] == [2, 1, 3]
+
+
+def test_anonymous_callers_cannot_remove_or_list_ids(client, anon_headers):
+    assert client.delete("/api/favourites/3", headers=anon_headers).status_code == 401
+    assert client.get("/api/favourites/ids", headers=anon_headers).status_code == 401
+    assert client.get("/api/favourites/ids").status_code == 401
+
+
+def test_favourites_are_still_there_after_signing_in_again(client, demo_headers):
+    client.post("/api/favourites/3", headers=demo_headers)
+
+    fresh = login(client)
+
+    assert [f["id"] for f in client.get("/api/favourites", headers=fresh).json()] == [3]
