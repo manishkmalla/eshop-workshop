@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-export default function ProductCard({ item, onAdded }) {
+export default function ProductCard({ item, onAdded, isFavourite, onToggleFavourite }) {
   const { refreshBasket } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,7 +24,24 @@ export default function ProductCard({ item, onAdded }) {
 
   return (
     <article className="card flex flex-col overflow-hidden p-0 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="aspect-square overflow-hidden bg-slate-100">
+      <div className="relative aspect-square overflow-hidden bg-slate-100">
+        <button
+          type="button"
+          onClick={onToggleFavourite}
+          aria-pressed={isFavourite}
+          aria-label={isFavourite ? `Remove ${item.name} from favourites` : `Add ${item.name} to favourites`}
+          className="absolute right-2 top-2 rounded-full bg-white/90 p-2 shadow transition hover:bg-white"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className={`h-5 w-5 ${isFavourite ? 'fill-rose-500 text-rose-500' : 'fill-none text-slate-500'}`}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          >
+            <path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.5 3 5 6.5 5c2 0 3.5 1.1 5.5 3 2-1.9 3.5-3 5.5-3C21 5 22.8 8.5 21.5 11.8 19.5 16.4 12 21 12 21z" />
+          </svg>
+        </button>
         <img
           src={item.picture_uri}
           alt={item.name}

@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import CatalogFilters from '../components/CatalogFilters';
 import Pagination from '../components/Pagination';
 import ProductCard from '../components/ProductCard';
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [favouriteIds, setFavouriteIds] = useState(() => new Set());
   const [brands, setBrands] = useState([]);
   const [types, setTypes] = useState([]);
   const [catalog, setCatalog] = useState(null);
@@ -38,6 +43,40 @@ export default function CatalogPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [brandId, typeId, page]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setFavouriteIds(new Set());
+      return;
+    }
+    api
+      .getFavouriteIds()
+      .then((ids) => setFavouriteIds(new Set(ids)))
+      .catch((err) => setError(err.message));
+  }, [isAuthenticated]);
+
+  async function handleToggleFavourite(productId) {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: location.pathname + location.search } });
+      return;
+    }
+    const wasFavourite = favouriteIds.has(productId);
+    try {
+      if (wasFavourite) {
+        await api.removeFavourite(productId);
+      } else {
+        await api.addFavourite(productId);
+      }
+      setFavouriteIds((current) => {
+        const next = new Set(current);
+        if (wasFavourite) next.delete(productId);
+        else next.add(productId);
+        return next;
+      });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   function handleFilterChange({ brandId: nextBrand, typeId: nextType }) {
     const params = new URLSearchParams();
@@ -81,7 +120,12 @@ export default function CatalogPage() {
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {catalog?.items.map((item) => (
-              <ProductCard key={item.id} item={item} />
+              <ProductCard
+                key={item.id}
+                item={item}
+                isFavourite={favouriteIds.has(item.id)}
+                onToggleFavourite={() => handleToggleFavourite(item.id)}
+              />
             ))}
           </div>
 
